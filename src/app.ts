@@ -1,13 +1,16 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import stationsRouter from './routes/stations';
+import authRouter from './routes/auth';
+import adminStationsRouter from './routes/adminStations';
 
 const app = express();
 
 app.use(
   cors({
     origin: '*',
-    methods: ['GET', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 );
 
@@ -22,11 +25,22 @@ app.get('/', (_req, res) => {
   res.json({
     name: 'LocalizaPlug API',
     version: '1.0.0',
-    endpoints: ['GET /api/stations', 'GET /api/stations/:id'],
+    endpoints: [
+      'GET /api/stations',
+      'GET /api/stations/:id',
+      'POST /api/auth/register',
+      'POST /api/auth/login',
+      'GET /api/auth/me',
+      'POST /api/admin/stations',
+      'PATCH /api/admin/stations/:id',
+      'DELETE /api/admin/stations/:id',
+    ],
   });
 });
 
 app.use('/api/stations', stationsRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/admin/stations', adminStationsRouter);
 
 app.use((req, res) => {
   res.status(404).json({
