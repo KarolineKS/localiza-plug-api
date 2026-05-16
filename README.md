@@ -137,6 +137,61 @@ GET /api/stations?city=Pelotas&status=Disponível
 }
 ```
 
+### Autenticação — `POST /api/auth/register` e `POST /api/auth/login`
+
+Body:
+
+```json
+{ "email": "admin@test.com", "password": "senha123" }
+```
+
+Resposta (`201` register, `200` login):
+
+```json
+{
+  "data": {
+    "user": { "id": "...", "email": "admin@test.com", "createdAt": "..." },
+    "token": "eyJhbGciOi..."
+  }
+}
+```
+
+> Por enquanto **todo usuário cadastrado é admin** (sem campo de role). Para o MVP, o `/register` é aberto — quando for pra produção, adicione um token de convite ou desabilite o endpoint.
+
+### `GET /api/auth/me`
+
+Header `Authorization: Bearer <token>`. Retorna o usuário corrente.
+
+### Admin — CRUD de eletropostos
+
+Todas as rotas exigem `Authorization: Bearer <token>`.
+
+| Método  | Rota                          | Status sucesso |
+|---------|-------------------------------|----------------|
+| POST    | `/api/admin/stations`         | `201`          |
+| PATCH   | `/api/admin/stations/:id`     | `200`          |
+| DELETE  | `/api/admin/stations/:id`     | `204`          |
+
+`POST` aceita o body completo (status/connector/price com labels: `"Disponível"`, `"CCS2"`, `"Pago"`, etc.). `PATCH` é parcial — envie só os campos a alterar.
+
+### Consumindo do Lovable
+
+```ts
+const API = "https://SEU-PROJETO.vercel.app";
+const token = localStorage.getItem("token");
+
+const r = await fetch(`${API}/api/admin/stations`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify(payload),
+});
+```
+
+CORS já está liberado pra `*` com `GET, POST, PATCH, DELETE, OPTIONS` e headers `Content-Type, Authorization`.
+
 ### `GET /api/stations/:id`
 
 Retorna detalhe de um eletroposto.
