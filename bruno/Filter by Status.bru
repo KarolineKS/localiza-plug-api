@@ -1,0 +1,19 @@
+meta {
+  name: Filter by Status
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/stations?status=Disponível
+  body: none
+  auth: none
+}
+
+params:query {
+  status: Disponível
+}
+
+docs {
+  Filtra eletropostos por status. Valores: Disponível | Ocupado | Em Manutenção | Reservado.
+}

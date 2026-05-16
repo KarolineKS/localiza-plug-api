@@ -1,0 +1,15 @@
+meta {
+  name: List Stations
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/stations
+  body: none
+  auth: none
+}
+
+docs {
+  Lista todos os eletropostos cadastrados, sem filtros.
+}

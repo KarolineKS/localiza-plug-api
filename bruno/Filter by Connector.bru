@@ -1,0 +1,19 @@
+meta {
+  name: Filter by Connector
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/stations?connector=CCS2
+  body: none
+  auth: none
+}
+
+params:query {
+  connector: CCS2
+}
+
+docs {
+  Filtra eletropostos por tipo de conector. Valores: CCS2 | Tipo 2 | CHAdeMO.
+}

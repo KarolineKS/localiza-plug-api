@@ -1,0 +1,15 @@
+meta {
+  name: Get Station by ID
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/stations/pel_001
+  body: none
+  auth: none
+}
+
+docs {
+  Retorna detalhe de um eletroposto pelo id. IDs do seed: pel_001 a pel_008.
+}

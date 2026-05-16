@@ -1,0 +1,15 @@
+meta {
+  name: Get Station Not Found
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/api/stations/pel_999
+  body: none
+  auth: none
+}
+
+docs {
+  Caso de erro 404 — id inexistente. Retorna { error: { code: "STATION_NOT_FOUND", message } }.
+}
