@@ -1,0 +1,19 @@
+meta {
+  name: Delete Station
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/api/admin/stations/pel_test
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Remove eletroposto. Retorna 204 No Content em sucesso.
+}

@@ -1,0 +1,36 @@
+meta {
+  name: Create Station
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/admin/stations
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "id": "pel_test",
+    "name": "Eletroposto de Teste",
+    "lat": -31.77,
+    "lng": -52.33,
+    "address": "Rua de Teste, 123",
+    "neighborhood": "Centro",
+    "city": "Pelotas",
+    "state": "RS",
+    "status": "Disponível",
+    "connector": "CCS2",
+    "powerKW": 75,
+    "price": "Pago"
+  }
+}
+
+docs {
+  Cria eletroposto. Requer Authorization. Status/connector/price aceitam labels.
+}
