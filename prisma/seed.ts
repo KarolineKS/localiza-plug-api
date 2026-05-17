@@ -1,119 +1,135 @@
-import { PrismaClient, StationStatus, StationConnector, StationPrice } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+const now = Date.now();
+const inSeconds = (s: number) => new Date(now + s * 1000);
+
 const stations = [
   {
-    id: 'pel_001',
     name: 'WEG Shopping Pelotas',
     lat: -31.7716,
     lng: -52.3325,
     address: 'R. Sen. Joaquim Assumpção, 100',
     neighborhood: 'Areal',
-    status: StationStatus.DISPONIVEL,
-    connector: StationConnector.CCS2,
-    powerKW: 60,
-    price: StationPrice.PAGO,
+    plugs: [
+      { connectorType: 'CCS2', powerKW: 60, status: 'Disponível', pricePerKWh: 1.45, priceType: 'Pago' },
+      { connectorType: 'Tipo 2', powerKW: 22, status: 'Ocupado', pricePerKWh: 1.45, priceType: 'Pago' },
+    ],
   },
   {
-    id: 'pel_002',
     name: 'Tupinambá Centro Histórico',
     lat: -31.767,
     lng: -52.3389,
     address: 'Pç. Cel. Pedro Osório, 102',
     neighborhood: 'Centro',
-    status: StationStatus.OCUPADO,
-    connector: StationConnector.TIPO_2,
-    powerKW: 22,
-    price: StationPrice.PAGO,
+    plugs: [
+      { connectorType: 'Tipo 2', powerKW: 22, status: 'Ocupado', pricePerKWh: 1.39, priceType: 'Pago' },
+    ],
   },
   {
-    id: 'pel_003',
     name: 'EZVolt UFPel Anglo',
     lat: -31.7649,
     lng: -52.3373,
     address: 'R. Gomes Carneiro, 1',
     neighborhood: 'Centro',
-    status: StationStatus.DISPONIVEL,
-    connector: StationConnector.CCS2,
-    powerKW: 50,
-    price: StationPrice.GRATUITO,
+    plugs: [
+      { connectorType: 'CCS2', powerKW: 50, status: 'Disponível', pricePerKWh: 0, priceType: 'Gratuito' },
+      { connectorType: 'Tipo 2', powerKW: 22, status: 'Disponível', pricePerKWh: 0, priceType: 'Gratuito' },
+      { connectorType: 'Tipo 2', powerKW: 22, status: 'Disponível', pricePerKWh: 0, priceType: 'Gratuito' },
+    ],
   },
   {
-    id: 'pel_004',
     name: 'WEG Av. Bento Gonçalves',
     lat: -31.7541,
     lng: -52.3225,
     address: 'Av. Bento Gonçalves, 4500',
     neighborhood: 'Três Vendas',
-    status: StationStatus.DISPONIVEL,
-    connector: StationConnector.CCS2,
-    powerKW: 150,
-    price: StationPrice.PAGO,
+    plugs: [
+      { connectorType: 'CCS2', powerKW: 150, status: 'Disponível', pricePerKWh: 1.89, priceType: 'Pago' },
+      { connectorType: 'CCS2', powerKW: 150, status: 'Ocupado', pricePerKWh: 1.89, priceType: 'Pago' },
+      {
+        connectorType: 'Tipo 2',
+        powerKW: 22,
+        status: 'Reservado',
+        pricePerKWh: 1.49,
+        priceType: 'Pago',
+        reservedUntil: inSeconds(12),
+      },
+      { connectorType: 'CHAdeMO', powerKW: 50, status: 'Em Manutenção', pricePerKWh: 1.99, priceType: 'Pago' },
+    ],
   },
   {
-    id: 'pel_005',
     name: 'Raízen Power BR-392',
     lat: -31.743,
     lng: -52.3115,
     address: 'BR-392 km 100',
     neighborhood: 'Centro Industrial',
-    status: StationStatus.DISPONIVEL,
-    connector: StationConnector.CHADEMO,
-    powerKW: 150,
-    price: StationPrice.PAGO,
+    plugs: [
+      { connectorType: 'CCS2', powerKW: 150, status: 'Disponível', pricePerKWh: 2.1, priceType: 'Pago' },
+      { connectorType: 'CCS2', powerKW: 150, status: 'Disponível', pricePerKWh: 2.1, priceType: 'Pago' },
+      { connectorType: 'CHAdeMO', powerKW: 50, status: 'Disponível', pricePerKWh: 1.99, priceType: 'Pago' },
+      { connectorType: 'CHAdeMO', powerKW: 50, status: 'Ocupado', pricePerKWh: 1.99, priceType: 'Pago' },
+    ],
   },
   {
-    id: 'pel_006',
     name: 'EZVolt Av. Fernando Osório',
     lat: -31.7889,
     lng: -52.3398,
     address: 'Av. Fernando Osório, 1850',
     neighborhood: 'Três Vendas',
-    status: StationStatus.OCUPADO,
-    connector: StationConnector.TIPO_2,
-    powerKW: 22,
-    price: StationPrice.GRATUITO,
+    plugs: [
+      { connectorType: 'Tipo 2', powerKW: 22, status: 'Ocupado', pricePerKWh: 0, priceType: 'Gratuito' },
+      { connectorType: 'Tipo 2', powerKW: 22, status: 'Ocupado', pricePerKWh: 0, priceType: 'Gratuito' },
+    ],
   },
   {
-    id: 'pel_007',
     name: 'Tupinambá Praia do Laranjal',
     lat: -31.7768,
     lng: -52.2236,
     address: 'Av. dos Pescadores, 1200',
     neighborhood: 'Laranjal',
-    status: StationStatus.EM_MANUTENCAO,
-    connector: StationConnector.CCS2,
-    powerKW: 50,
-    price: StationPrice.PAGO,
+    plugs: [
+      { connectorType: 'CCS2', powerKW: 50, status: 'Em Manutenção', pricePerKWh: 1.89, priceType: 'Pago' },
+      { connectorType: 'Tipo 2', powerKW: 22, status: 'Em Manutenção', pricePerKWh: 1.49, priceType: 'Pago' },
+    ],
   },
   {
-    id: 'pel_008',
     name: 'WEG Centro Industrial',
     lat: -31.748,
     lng: -52.314,
     address: 'R. Almirante Barroso, 200',
     neighborhood: 'Centro Industrial',
-    status: StationStatus.RESERVADO,
-    connector: StationConnector.CCS2,
-    powerKW: 60,
-    price: StationPrice.PAGO,
+    plugs: [
+      {
+        connectorType: 'CCS2',
+        powerKW: 60,
+        status: 'Reservado',
+        pricePerKWh: 1.65,
+        priceType: 'Pago',
+        reservedUntil: inSeconds(8),
+      },
+    ],
   },
 ];
 
 async function main() {
-  console.log('Seeding eletropostos...');
+  console.log('Limpando banco...');
+  await prisma.plug.deleteMany();
+  await prisma.station.deleteMany();
 
-  for (const station of stations) {
-    await prisma.station.upsert({
-      where: { id: station.id },
-      update: station,
-      create: station,
+  console.log('Criando estações...');
+  for (const s of stations) {
+    const { plugs, ...rest } = s;
+    const created = await prisma.station.create({
+      data: { ...rest, plugs: { create: plugs } },
+      include: { plugs: true },
     });
-    console.log(`  -> ${station.id}: ${station.name}`);
+    console.log(`  -> ${created.name} (${created.plugs.length} plug${created.plugs.length > 1 ? 's' : ''})`);
   }
 
-  console.log(`Seed concluído: ${stations.length} eletropostos.`);
+  const total = await prisma.plug.count();
+  console.log(`Seed concluído: ${stations.length} estações, ${total} plugs.`);
 }
 
 main()
@@ -121,6 +137,4 @@ main()
     console.error(e);
     process.exit(1);
   })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .finally(() => prisma.$disconnect());
