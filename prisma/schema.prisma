@@ -8,52 +8,39 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@map("users")
-}
-
-enum StationStatus {
-  DISPONIVEL
-  OCUPADO
-  EM_MANUTENCAO
-  RESERVADO
-}
-
-enum StationConnector {
-  CCS2
-  TIPO_2
-  CHADEMO
-}
-
-enum StationPrice {
-  GRATUITO
-  PAGO
-}
-
 model Station {
-  id           String           @id @default(cuid())
+  id           String   @id @default(cuid())
   name         String
   lat          Float
   lng          Float
   address      String
   neighborhood String
-  city         String           @default("Pelotas")
-  state        String           @default("RS")
-  status       StationStatus
-  connector    StationConnector
-  powerKW      Int
-  price        StationPrice
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  city         String   @default("Pelotas")
+  state        String   @default("RS")
+  plugs        Plug[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  @@index([status])
-  @@index([connector])
   @@index([city])
   @@map("stations")
+}
+
+model Plug {
+  id            String    @id @default(cuid())
+  stationId     String
+  connectorType String
+  powerKW       Int
+  status        String
+  pricePerKWh   Float
+  priceType     String
+  reservedUntil DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  station Station @relation(fields: [stationId], references: [id], onDelete: Cascade)
+
+  @@index([stationId])
+  @@index([status])
+  @@index([connectorType])
+  @@map("plugs")
 }
