@@ -1,11 +1,11 @@
 meta {
   name: Update Station
   type: http
-  seq: 2
+  seq: 3
 }
 
-patch {
-  url: {{baseUrl}}/api/admin/stations/pel_test
+put {
+  url: {{baseUrl}}/api/admin/stations/STATION_ID
   body: json
   auth: bearer
 }
@@ -16,11 +16,20 @@ auth:bearer {
 
 body:json {
   {
-    "status": "Ocupado",
-    "powerKW": 100
+    "name": "Posto Renomeado",
+    "plugs": [
+      {
+        "connectorType": "CHAdeMO",
+        "powerKW": 100,
+        "status": "Disponível",
+        "pricePerKWh": 2.0,
+        "priceType": "Pago"
+      }
+    ]
   }
 }
 
 docs {
-  Atualização parcial. Envie apenas os campos a alterar.
+  PUT substitui a estação. Se enviar "plugs", todos os plugs antigos são apagados e os novos criados (estratégia replace, não diff).
+  Substitua STATION_ID pelo id real na URL.
 }

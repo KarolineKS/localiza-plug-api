@@ -1,7 +1,7 @@
 meta {
   name: Create Station
   type: http
-  seq: 1
+  seq: 2
 }
 
 post {
@@ -16,21 +16,32 @@ auth:bearer {
 
 body:json {
   {
-    "id": "pel_test",
-    "name": "Eletroposto de Teste",
+    "name": "Posto Teste",
     "lat": -31.77,
     "lng": -52.33,
     "address": "Rua de Teste, 123",
     "neighborhood": "Centro",
     "city": "Pelotas",
     "state": "RS",
-    "status": "Disponível",
-    "connector": "CCS2",
-    "powerKW": 75,
-    "price": "Pago"
+    "plugs": [
+      {
+        "connectorType": "CCS2",
+        "powerKW": 50,
+        "status": "Disponível",
+        "pricePerKWh": 1.5,
+        "priceType": "Pago"
+      },
+      {
+        "connectorType": "Tipo 2",
+        "powerKW": 22,
+        "status": "Disponível",
+        "pricePerKWh": 1.2,
+        "priceType": "Pago"
+      }
+    ]
   }
 }
 
 docs {
-  Cria eletroposto. Requer Authorization. Status/connector/price aceitam labels.
+  Cria estação com plugs em uma transação.
 }

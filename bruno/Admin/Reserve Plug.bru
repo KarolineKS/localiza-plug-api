@@ -1,0 +1,27 @@
+meta {
+  name: Reserve Plug
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/admin/plugs/PLUG_ID/reserve
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "durationSeconds": 15
+  }
+}
+
+docs {
+  Marca o plug como Reservado e define reservedUntil = agora + durationSeconds.
+  Body opcional: { durationSeconds: number } — default 900 (15 minutos).
+  Substitua PLUG_ID pelo id real do plug na URL.
+}

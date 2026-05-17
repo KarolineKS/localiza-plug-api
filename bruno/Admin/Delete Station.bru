@@ -1,11 +1,11 @@
 meta {
   name: Delete Station
   type: http
-  seq: 3
+  seq: 4
 }
 
 delete {
-  url: {{baseUrl}}/api/admin/stations/pel_test
+  url: {{baseUrl}}/api/admin/stations/STATION_ID
   body: none
   auth: bearer
 }
@@ -15,5 +15,5 @@ auth:bearer {
 }
 
 docs {
-  Remove eletroposto. Retorna 204 No Content em sucesso.
+  Remove estação. Plugs são apagados em cascade.
 }

@@ -10,6 +10,20 @@ get {
   auth: none
 }
 
+params:query {
+  ~status: Disponível
+  ~connector: CCS2
+  ~minPower: 50
+  ~priceType: Gratuito
+  ~city: Pelotas
+}
+
 docs {
-  Lista todos os eletropostos cadastrados, sem filtros.
+  Lista estações com plugs incluídos.
+  Filtros opcionais (combináveis em AND):
+  - status: estações com pelo menos um plug nesse status
+  - connector: CCS2 | Tipo 2 | CHAdeMO
+  - minPower: powerKW >= valor
+  - priceType: Gratuito | Pago
+  - city: busca parcial case-insensitive
 }
