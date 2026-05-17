@@ -2,7 +2,16 @@
 
 API REST do **LocalizaPlug** — web app de localização de eletropostos para carros elétricos em Pelotas/RS.
 
-Stack: **Node.js + TypeScript + Express + Prisma + Neon (PostgreSQL serverless) + Vercel**.
+Cada **estação** tem múltiplos **plugs**, e cada plug tem seu próprio status, tipo de conector, potência e preço.
+
+## Stack
+
+- Node.js + TypeScript
+- Express
+- Prisma ORM
+- Neon (PostgreSQL serverless)
+- Deploy na Vercel como Serverless Function
+- Auth: senha de admin (bcrypt) + JWT (HS256)
 
 ---
 
@@ -14,98 +23,100 @@ Stack: **Node.js + TypeScript + Express + Prisma + Neon (PostgreSQL serverless) 
 npm install
 ```
 
-O hook `postinstall` já roda `prisma generate` automaticamente.
+O hook `postinstall` roda `prisma generate` automaticamente.
 
 ### 2. Criar banco no Neon
 
-1. Crie uma conta em [neon.tech](https://neon.tech)
-2. Crie um novo projeto (region: AWS US East ou SA East)
-3. No dashboard do projeto, vá em **Connection Details** e copie:
-   - A **connection string com pooler** (URL contém `-pooler.neon.tech`)
-   - A **connection string direta** (URL contém `.neon.tech` SEM `-pooler`)
+1. Crie uma conta em [neon.tech](https://neon.tech).
+2. Crie um projeto (region: AWS US East ou SA East).
+3. No dashboard, abra **Connection Details** e copie:
+   - Connection string **com pooler** (contém `-pooler.neon.tech`) → `DATABASE_URL`
+   - Connection string **direta** (sem `-pooler`) → `DIRECT_URL`
 
-### 3. Configurar variáveis de ambiente
+### 3. Gerar senha de admin
+
+```bash
+node -e "console.log(require('bcryptjs').hashSync('minhasenha', 10))"
+```
+
+Copia o hash retornado (algo como `$2a$10$...`) — esse é o valor de `ADMIN_PASSWORD`. A senha em texto plano **nunca** é guardada em lugar nenhum, só o hash bcrypt fica na env var.
+
+### 4. Gerar JWT_SECRET
+
+```bash
+openssl rand -base64 32
+```
+
+### 5. Preencher .env
 
 ```bash
 cp .env.example .env
 ```
 
-Edite `.env` e preencha:
+Edite os 4 valores: `DATABASE_URL`, `DIRECT_URL`, `ADMIN_PASSWORD` (hash bcrypt), `JWT_SECRET`. Opcionalmente ajuste `JWT_EXPIRES_IN` (default `24h`).
 
-```env
-DATABASE_URL="postgresql://...-pooler.neon.tech/..."
-DIRECT_URL="postgresql://....neon.tech/..."
-```
-
-> **Por que duas URLs?** O Prisma usa `DIRECT_URL` para migrations (precisa de conexão direta, sem pooler) e `DATABASE_URL` em runtime (com pooler, ideal para serverless).
-
-### 4. Rodar migrations
+### 6. Migration + seed
 
 ```bash
 npx prisma migrate dev --name init
-```
-
-### 5. Popular banco com eletropostos de Pelotas
-
-```bash
 npm run db:seed
 ```
 
-### 6. Subir servidor de dev
+### 7. Subir servidor
 
 ```bash
 npm run dev
 ```
 
-Servidor roda em `http://localhost:3000` via `vercel dev`.
+> `npm run dev` usa `vercel dev` (precisa do `vercel login`). Para rodar standalone sem o CLI da Vercel: `npx tsx scripts/dev.ts` (porta 3000 ou `PORT=…`).
 
 ---
 
 ## Deploy na Vercel
 
 ```bash
-# 1. Login
 vercel login
-
-# 2. Linkar projeto
 vercel link
+```
 
-# 3. Configurar env vars no dashboard da Vercel
-# Settings → Environment Variables:
-#   DATABASE_URL = postgresql://...-pooler.neon.tech/...
-#   DIRECT_URL   = postgresql://....neon.tech/...
+No dashboard da Vercel → **Settings → Environment Variables**, adicione **as 4 variáveis**:
+- `DATABASE_URL`
+- `DIRECT_URL`
+- `ADMIN_PASSWORD` (hash bcrypt)
+- `JWT_SECRET`
 
-# 4. Deploy de produção
+Aplique a migration no Neon de produção:
+
+```bash
+DATABASE_URL=... DIRECT_URL=... npx prisma migrate deploy
+DATABASE_URL=... DIRECT_URL=... npm run db:seed
+```
+
+Deploy:
+
+```bash
 vercel --prod
 ```
 
-O hook `vercel-build` (`prisma generate && tsc`) roda automaticamente no build da Vercel.
+O hook `vercel-build` roda `prisma generate && tsc`.
 
 ---
 
-## Endpoints
+## Endpoints públicos
 
 ### `GET /api/stations`
 
-Lista eletropostos com filtros opcionais.
+Lista estações com plugs incluídos.
 
 **Query params** (todos opcionais, combináveis em AND):
 
-| Param       | Tipo   | Exemplo               | Descrição                              |
-|-------------|--------|-----------------------|----------------------------------------|
-| `status`    | string | `Disponível`          | Status do eletroposto                  |
-| `connector` | string | `CCS2`                | Tipo de conector                       |
-| `minPower`  | number | `50`                  | Potência mínima em kW (`powerKW >= N`) |
-| `city`      | string | `Pelotas`             | Cidade                                 |
-
-**Exemplos:**
-
-```bash
-GET /api/stations
-GET /api/stations?status=Disponível
-GET /api/stations?connector=CCS2&minPower=50
-GET /api/stations?city=Pelotas&status=Disponível
-```
+| Param        | Exemplo          | Descrição                                                  |
+|--------------|------------------|------------------------------------------------------------|
+| `status`     | `Disponível`     | Estações com pelo menos 1 plug nesse status                |
+| `connector`  | `CCS2`           | Estações com pelo menos 1 plug desse conector              |
+| `minPower`   | `50`             | Estações com pelo menos 1 plug com `powerKW >= valor`      |
+| `priceType`  | `Gratuito`       | Estações com pelo menos 1 plug desse tipo de preço         |
+| `city`       | `pelo`           | Busca parcial case-insensitive em `city`                   |
 
 **Resposta:**
 
@@ -113,7 +124,7 @@ GET /api/stations?city=Pelotas&status=Disponível
 {
   "data": [
     {
-      "id": "pel_001",
+      "id": "cm...",
       "name": "WEG Shopping Pelotas",
       "lat": -31.7716,
       "lng": -52.3325,
@@ -121,66 +132,104 @@ GET /api/stations?city=Pelotas&status=Disponível
       "neighborhood": "Areal",
       "city": "Pelotas",
       "state": "RS",
-      "status": "Disponível",
-      "connector": "CCS2",
-      "powerKW": 60,
-      "price": "Pago",
-      "createdAt": "2026-05-16T12:00:00.000Z",
-      "updatedAt": "2026-05-16T12:00:00.000Z"
+      "plugs": [
+        {
+          "id": "cm...",
+          "connectorType": "CCS2",
+          "powerKW": 60,
+          "status": "Disponível",
+          "pricePerKWh": 1.45,
+          "priceType": "Pago",
+          "reservedUntil": null
+        }
+      ],
+      "createdAt": "...",
+      "updatedAt": "..."
     }
   ],
-  "meta": {
-    "total": 1,
-    "timestamp": "2026-05-16T12:00:00.000Z",
-    "source": "LocalizaPlug API v1"
-  }
+  "meta": { "total": 8, "timestamp": "...", "source": "LocalizaPlug API v1" }
 }
 ```
 
-### Autenticação — `POST /api/auth/register` e `POST /api/auth/login`
+### `GET /api/stations/:id`
+
+Detalhe de uma estação com seus plugs.
+
+---
+
+## Endpoints administrativos
+
+### `POST /api/admin/login`
 
 Body:
 
 ```json
-{ "email": "admin@test.com", "password": "senha123" }
+{ "password": "minhasenha" }
 ```
 
-Resposta (`201` register, `200` login):
+Compara com `process.env.ADMIN_PASSWORD` (hash bcrypt). Em sucesso retorna `{ "token": "..." }` (JWT HS256 com `{ "role": "admin" }`, expira em `JWT_EXPIRES_IN`).
+
+Erro 401:
 
 ```json
+{ "error": { "code": "INVALID_PASSWORD", "message": "Senha incorreta" } }
+```
+
+### Rotas protegidas
+
+Todas exigem `Authorization: Bearer <token>`.
+
+| Método | Rota                                | Status  |
+|--------|-------------------------------------|---------|
+| POST   | `/api/admin/stations`               | 201     |
+| PUT    | `/api/admin/stations/:id`           | 200     |
+| DELETE | `/api/admin/stations/:id`           | 200     |
+| POST   | `/api/admin/plugs/:plugId/reserve`  | 200     |
+
+**Criar estação:**
+
+```json
+POST /api/admin/stations
 {
-  "data": {
-    "user": { "id": "...", "email": "admin@test.com", "createdAt": "..." },
-    "token": "eyJhbGciOi..."
-  }
+  "name": "Posto Teste",
+  "lat": -31.77, "lng": -52.33,
+  "address": "Rua X, 1",
+  "neighborhood": "Centro",
+  "plugs": [
+    { "connectorType": "CCS2", "powerKW": 50, "status": "Disponível", "pricePerKWh": 1.5, "priceType": "Pago" }
+  ]
 }
 ```
 
-> Por enquanto **todo usuário cadastrado é admin** (sem campo de role). Para o MVP, o `/register` é aberto — quando for pra produção, adicione um token de convite ou desabilite o endpoint.
+**Atualizar:** `PUT` aceita os mesmos campos do POST, todos opcionais. Se enviar `plugs`, faz **replace** (apaga os antigos, cria os novos) — estratégia simples em vez de diff.
 
-### `GET /api/auth/me`
+**Reservar plug:**
 
-Header `Authorization: Bearer <token>`. Retorna o usuário corrente.
+```json
+POST /api/admin/plugs/:plugId/reserve
+{ "durationSeconds": 15 }
+```
 
-### Admin — CRUD de eletropostos
+Body opcional. Default = `900` (15 minutos). Aceita valores pequenos como `15` pra demo.
 
-Todas as rotas exigem `Authorization: Bearer <token>`.
+---
 
-| Método  | Rota                          | Status sucesso |
-|---------|-------------------------------|----------------|
-| POST    | `/api/admin/stations`         | `201`          |
-| PATCH   | `/api/admin/stations/:id`     | `200`          |
-| DELETE  | `/api/admin/stations/:id`     | `204`          |
-
-`POST` aceita o body completo (status/connector/price com labels: `"Disponível"`, `"CCS2"`, `"Pago"`, etc.). `PATCH` é parcial — envie só os campos a alterar.
-
-### Consumindo do Lovable
+## Consumindo do Lovable
 
 ```ts
 const API = "https://SEU-PROJETO.vercel.app";
-const token = localStorage.getItem("token");
 
-const r = await fetch(`${API}/api/admin/stations`, {
+// login
+const r = await fetch(`${API}/api/admin/login`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ password: "..." }),
+});
+const { token } = await r.json();
+localStorage.setItem("token", token);
+
+// chamada autenticada
+await fetch(`${API}/api/admin/stations`, {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -190,32 +239,15 @@ const r = await fetch(`${API}/api/admin/stations`, {
 });
 ```
 
-CORS já está liberado pra `*` com `GET, POST, PATCH, DELETE, OPTIONS` e headers `Content-Type, Authorization`.
-
-### `GET /api/stations/:id`
-
-Retorna detalhe de um eletroposto.
-
-```bash
-GET /api/stations/pel_001
-```
-
-Resposta `404`:
-
-```json
-{ "error": { "code": "STATION_NOT_FOUND", "message": "Eletroposto pel_999 não encontrado." } }
-```
+CORS está liberado pra `*` com `GET, POST, PUT, DELETE, OPTIONS` e headers `Content-Type, Authorization`.
 
 ---
 
-## Scripts
+## Segurança
 
-| Script              | Descrição                                          |
-|---------------------|----------------------------------------------------|
-| `npm run dev`       | Servidor local com `vercel dev`                    |
-| `npm run build`     | `prisma generate && tsc`                           |
-| `npm run db:migrate`| Roda `prisma migrate dev`                          |
-| `npm run db:seed`   | Popula banco com 8 eletropostos de Pelotas         |
+- A senha de admin **nunca** é guardada em texto plano. Apenas o hash bcrypt vai pra `ADMIN_PASSWORD`.
+- O JWT é assinado com `JWT_SECRET` (HS256). Trate como segredo — não comite, não logue, não exponha no frontend.
+- Como há **uma única conta admin**, qualquer cliente com a senha tem acesso total. Para múltiplos operadores reais, evolua pra tabela `User` com roles.
 
 ---
 
@@ -223,16 +255,26 @@ Resposta `404`:
 
 ```
 localizaplug-api/
-├── api/index.ts              # entry da Vercel (export default app)
+├── api/index.ts                # entry da Vercel
+├── scripts/dev.ts              # dev local sem vercel cli
 ├── src/
-│   ├── app.ts                # Express + middlewares + rotas
-│   ├── routes/stations.ts
-│   ├── controllers/stationsController.ts
-│   ├── lib/prisma.ts         # singleton com globalThis
+│   ├── app.ts
+│   ├── routes/
+│   │   ├── stations.ts
+│   │   └── admin.ts
+│   ├── controllers/
+│   │   ├── stationsController.ts
+│   │   └── adminController.ts
+│   ├── middlewares/
+│   │   └── authMiddleware.ts
+│   ├── lib/
+│   │   ├── prisma.ts
+│   │   └── auth.ts
 │   └── types/index.ts
 ├── prisma/
 │   ├── schema.prisma
 │   └── seed.ts
+├── bruno/                      # coleção de requests Bruno
 ├── package.json
 ├── tsconfig.json
 ├── vercel.json
