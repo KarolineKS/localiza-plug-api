@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { verifyToken, TokenPayload } from '../lib/auth';
+import { Request, Response, NextFunction } from "express";
+import { verifyToken, TokenPayload } from "../lib/auth";
 
 declare global {
   namespace Express {
@@ -12,9 +12,12 @@ declare global {
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
 
-  if (!header || !header.startsWith('Bearer ')) {
+  if (!header || !header.startsWith("Bearer ")) {
     return res.status(401).json({
-      error: { code: 'UNAUTHORIZED', message: 'Token ausente. Envie Authorization: Bearer <token>.' },
+      error: {
+        code: "UNAUTHORIZED",
+        message: "Token ausente. Envie Authorization: Bearer <token>.",
+      },
     });
   }
 
@@ -25,7 +28,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     next();
   } catch {
     return res.status(401).json({
-      error: { code: 'INVALID_TOKEN', message: 'Token inválido ou expirado.' },
+      error: { code: "INVALID_TOKEN", message: "Token inválido ou expirado." },
     });
   }
 }
