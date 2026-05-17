@@ -1,50 +1,38 @@
 import { Request, Response, NextFunction } from 'express';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
-import { serializeStation, toStatus, toConnector } from '../lib/stationMappers';
 
 const SOURCE = 'LocalizaPlug API v1';
 
 export async function listStations(req: Request, res: Response, next: NextFunction) {
   try {
-    const { status, connector, minPower, city } = req.query;
+    const { status, connector, minPower, priceType, city } = req.query;
 
-    const where: Prisma.StationWhereInput = {};
-
-    if (typeof status === 'string' && status) {
-      const mapped = toStatus(status);
-      if (!mapped) {
-        return res.status(400).json({
-          error: { code: 'INVALID_STATUS', message: `Status inválido: "${status}".` },
-        });
-      }
-      where.status = mapped;
-    }
-
-    if (typeof connector === 'string' && connector) {
-      const mapped = toConnector(connector);
-      if (!mapped) {
-        return res.status(400).json({
-          error: { code: 'INVALID_CONNECTOR', message: `Conector inválido: "${connector}".` },
-        });
-      }
-      where.connector = mapped;
-    }
-
-    if (typeof city === 'string' && city) where.city = city;
-
+    const plugConditions: Prisma.PlugWhereInput = {};
+    if (typeof status === 'string' && status) plugConditions.status = status;
+    if (typeof connector === 'string' && connector) plugConditions.connectorType = connector;
+    if (typeof priceType === 'string' && priceType) plugConditions.priceType = priceType;
     if (typeof minPower === 'string' && minPower) {
       const min = Number(minPower);
-      if (!Number.isNaN(min)) where.powerKW = { gte: min };
+      if (!Number.isNaN(min)) plugConditions.powerKW = { gte: min };
+    }
+
+    const where: Prisma.StationWhereInput = {};
+    if (Object.keys(plugConditions).length > 0) {
+      where.plugs = { some: plugConditions };
+    }
+    if (typeof city === 'string' && city) {
+      where.city = { contains: city, mode: 'insensitive' };
     }
 
     const stations = await prisma.station.findMany({
       where,
+      include: { plugs: true },
       orderBy: { name: 'asc' },
     });
 
     res.json({
-      data: stations.map(serializeStation),
+      data: stations,
       meta: {
         total: stations.length,
         timestamp: new Date().toISOString(),
@@ -58,22 +46,20 @@ export async function listStations(req: Request, res: Response, next: NextFuncti
 
 export async function getStation(req: Request, res: Response, next: NextFunction) {
   try {
-    const { id } = req.params;
-    const station = await prisma.station.findUnique({ where: { id } });
+    const station = await prisma.station.findUnique({
+      where: { id: req.params.id },
+      include: { plugs: true },
+    });
 
     if (!station) {
       return res.status(404).json({
-        error: { code: 'STATION_NOT_FOUND', message: `Eletroposto ${id} não encontrado.` },
+        error: { code: 'STATION_NOT_FOUND', message: `Estação ${req.params.id} não encontrada.` },
       });
     }
 
     res.json({
-      data: serializeStation(station),
-      meta: {
-        total: 1,
-        timestamp: new Date().toISOString(),
-        source: SOURCE,
-      },
+      data: station,
+      meta: { total: 1, timestamp: new Date().toISOString(), source: SOURCE },
     });
   } catch (err) {
     next(err);
